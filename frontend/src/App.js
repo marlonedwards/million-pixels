@@ -5,6 +5,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import Crop from './components/Crop';
 import './components/Crop.css';
 import CropComponent from './components/Crop';
+import CanvasComponent from './components/CanvasComponent.js';
 
 import { canvasPreview } from './components/canvasPreview.ts';
 import { useDebounceEffect } from './components/useDebounceEffects.ts';
@@ -13,7 +14,7 @@ import { useDebounceEffect } from './components/useDebounceEffects.ts';
 function App() {
   return (
     <div className="App">
-      
+        <CanvasComponent/>
         <Crop/>
     </div>
   );
