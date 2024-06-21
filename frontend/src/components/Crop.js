@@ -19,7 +19,7 @@ const Crop = () => {
   const [completedCrop, setCompletedCrop] = useState(null);
   const [scale, setScale] = useState(1);
   const [rotate, setRotate] = useState(0);
-  const [aspect, setAspect] = useState(16 / 9);
+  const [aspect, setAspect] = useState(1 / 1);
 
   const onSelectFile = (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -110,10 +110,10 @@ const Crop = () => {
     if (aspect) {
       setAspect(null);
     } else {
-      setAspect(16 / 9);
+      setAspect(1 / 1);
       if (imgRef.current) {
         const { width, height } = imgRef.current;
-        const newCrop = centerAspectCrop(width, height, 16 / 9);
+        const newCrop = centerAspectCrop(width, height, 1 / 1);
         setCrop(newCrop);
         setCompletedCrop(convertToPixelCrop(newCrop, width, height));
       }
