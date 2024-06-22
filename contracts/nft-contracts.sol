@@ -1,51 +1,77 @@
-string[] private blockchains = ['Ethereum', 'Solana', 'Arbitrum', 'Fantom', 'Polygon', 'Bitcoin'];
-string[] private dapps = ['Aave', 'Orca', 'Uniswap', 'MakerDAO', 'Magic Eden'];
-string[] private tokens = ["$ETH", "$SOL", "$BTC", "$AVAX"];
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-function random(string memory input) internal pure       returns (uint256) {
-    return uint256(keccak256(abi.encodePacked(input)));
+import "@thirdweb-dev/contracts/base/ERC721Base.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
+
+contract OnChainThirdweb is ERC721Base {
+    struct TokenData {
+        string imageData;
+        uint256 row;
+        uint256 col;
+    }
+
+    mapping(uint256 => TokenData) private tokenDataMap;
+
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        address _royaltyRecipient,
+        uint128 _royaltyBps
+    )
+        ERC721Base(
+            _name,
+            _symbol,
+            _royaltyRecipient,
+            _royaltyBps
+        )
+    {}
+
+    function setTokenData(uint256 tokenId, string memory imageData, uint256 row, uint256 col) public {
+        require(_exists(tokenId), "ERC721: token does not exist");
+        require(ownerOf(tokenId) == msg.sender, "ERC721: caller is not the owner");
+        tokenDataMap[tokenId] = TokenData(imageData, row, col);
+    }
+
+    function tokenURI(uint256 tokenId) override public view returns (string memory) {
+    TokenData memory data = tokenDataMap[tokenId];
+    string memory json = string(abi.encodePacked(
+        '{"name": "Web3 Card: ', toString(tokenId),
+        '", "description": "OnChain NFTs created with Thirdweb!", ',
+        '"image": "', data.imageData,
+        '", "attributes": [',
+        '{"trait_type": "Row", "value": "', toString(data.row), '"},',
+        '{"trait_type": "Column", "value": "', toString(data.col), '"}',
+        ']}'
+    ));
+
+    string memory encodedJson = Base64.encode(bytes(json));
+    string memory output = string(abi.encodePacked('data:application/json;base64,', encodedJson));
+
+    return output;
 }
 
-function getBlockchain(uint256 tokenId) public view returns (string memory){
-    return pluck(tokenId, "Blockchains", blockchains);
-}
+    function toString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
+    }
 
-function getDapp(uint256 tokenId) public view returns (string memory){
-    return pluck(tokenId, "Dapps", dapps);
-}
-
-function getToken(uint256 tokenId) public view returns (string memory){
-    return pluck(tokenId, "Tokens", tokens);
-}
-
-function tokenURI(uint256 tokenId) override public view returns (string memory){
-	string[8] memory parts;
- 
-	parts[0] = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; }</style><rect width="100%" height="100%" fill="black" /><text x="10" y="20" class="base">';
- 
- 	parts[1] = getName(tokenId);
- 
- 	parts[2] = '</text><text x="10" y="40" class="base">';
- 
- 	parts[3] = getLocation(tokenId);
- 
- 	parts[4] = '</text><text x="10" y="60" class="base">';
- 
- 	parts[6] = getIndustry(tokenId);
- 
- 	parts[7] = '</text></svg>';
- 
-	string memory output =
-		string(abi.encodePacked(parts[0], parts[1], parts[2], parts[3], parts[5], parts[6], parts[7]));
- 
-	string memory json = Base64.encode(bytes(string(abi.encodePacked('{"name": "Web3 Card: ', toString(tokenId), '", "description": "OnChain NFTs created with Thirdweb!", "image": "data:image/svg+xml;base64,', Base64.encode(bytes(output)), '"}'))));
-	
-	output = string(abi.encodePacked('data:application/json;base64,', json));
-      
-	return output;
-}
-
-function claim(uint256 _amount) public {
-    require(_amount > 0 && _amount < 6);
-    _safeMint(msg.sender, tokenId);
+    function claim(uint256 _amount) public {
+        require(_amount > 0 && _amount < 6);
+        _safeMint(msg.sender, _amount);
+    }
 }
