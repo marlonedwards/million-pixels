@@ -1,10 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const CanvasComponent = () => {
   const canvasRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [hoverInfo, setHoverInfo] = useState(null);
   const [clickedInfo, setClickedInfo] = useState(null);
+  const navigate = useNavigate();
 
   // Create a 100x100 gridData array to simulate ownership data for each 10x10 pixel block
   const gridData = Array.from({ length: 100 }, () => Array(100).fill(null));
@@ -29,27 +31,26 @@ const CanvasComponent = () => {
 
   const handleWheel = (e) => {
     e.preventDefault();
-  
+
     const rect = canvasRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-  
+
     const zoomFactor = Math.pow(1.1, e.deltaY * -0.01); // Zoom factor
     const newZoom = zoom * zoomFactor;
-    
+
     const deltaX = mouseX - mouseX * zoomFactor;
     const deltaY = mouseY - mouseY * zoomFactor;
-  
+
     setZoom(Math.max(1, Math.min(5, newZoom))); // Clamp zoom level
-    
+
     // Adjust scroll position to maintain centered zoom
     canvasRef.current.scrollLeft += deltaX;
     canvasRef.current.scrollTop += deltaY;
   };
-  
-  
+
   const handleMouseMove = (e) => {
-    if (clickedInfo) return; // Do nothing if a cell is clicked
+    if (clickedInfo) return; // Do not update hover info if a cell is clicked
 
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -58,13 +59,12 @@ const CanvasComponent = () => {
     const gridY = Math.floor(y / (10 * zoom));
 
     // Ensure gridX and gridY are within valid bounds
-    if (gridX < 0 || gridX >= 100 || gridY < 0 || gridY >= 100) {
+    if (gridX >= 0 && gridX < 100 && gridY >= 0 && gridY < 100) {
+      const info = gridData[gridX][gridY];
+      setHoverInfo({ x: gridX, y: gridY, info });
+    } else {
       setHoverInfo(null);
-      return;
     }
-
-    const info = gridData[gridX][gridY];
-    setHoverInfo({ x: gridX, y: gridY, info });
   };
 
   const handleClick = (e) => {
@@ -75,13 +75,19 @@ const CanvasComponent = () => {
     const gridY = Math.floor(y / (10 * zoom));
 
     // Ensure gridX and gridY are within valid bounds
-    if (gridX < 0 || gridX >= 100 || gridY < 0 || gridY >= 100) {
+    if (gridX >= 0 && gridX < 100 && gridY >= 0 && gridY < 100) {
+      const info = gridData[gridX][gridY];
+      setClickedInfo({ x: gridX, y: gridY, info });
+    } else {
       setClickedInfo(null);
-      return;
     }
+  };
 
-    const info = gridData[gridX][gridY];
-    setClickedInfo({ x: gridX, y: gridY, info });
+  const handlePurchaseClick = () => {
+    if (clickedInfo) {
+      const { x, y } = clickedInfo;
+      navigate(`/purchase-pixels/${x}-${y}`);
+    }
   };
 
   const handleClose = () => {
@@ -96,6 +102,19 @@ const CanvasComponent = () => {
       setHoverInfo({ x, y, info });
     }
   }, [zoom]);
+
+  const getPopupPosition = () => {
+    const info = clickedInfo || hoverInfo;
+    if (!info) return { left: 0, top: 0 };
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const left = rect.left + info.x * 10 * zoom + 10;
+    const top = rect.top + info.y * 10 * zoom;
+
+    return { left, top };
+  };
+
+  const popupPosition = getPopupPosition();
 
   return (
     <div>
@@ -112,8 +131,8 @@ const CanvasComponent = () => {
         <div
           style={{
             position: 'absolute',
-            left: (canvasRef.current.getBoundingClientRect().left + (hoverInfo || clickedInfo).x * 10 * zoom + 10),
-            top: (canvasRef.current.getBoundingClientRect().top + (hoverInfo || clickedInfo).y * 10 * zoom),
+            left: popupPosition.left,
+            top: popupPosition.top,
             padding: '5px',
             backgroundColor: 'white',
             border: '1px solid black',
@@ -127,7 +146,7 @@ const CanvasComponent = () => {
               <div>Owner: {(hoverInfo || clickedInfo).info?.owner || 'N/A'}</div>
             </>
           ) : (
-            <button>Purchase</button>
+            <button onClick={handlePurchaseClick}>Purchase</button>
           )}
           {clickedInfo && <button onClick={handleClose}>Close</button>}
         </div>
