@@ -1,11 +1,32 @@
-const fs = require('fs');
-const { PNG } = require('pngjs');
+// const fs = require('fs');
+const { PNG } = require('pngjs/browser/br
 var Jimp = require('jimp');
 
-function imageToPixelArray(filePath) {
+async function fetchBufferFromUrl(url) {
   try {
-    // from API https://www.npmjs.com/package/pngjs#sync-api
-    var data = fs.readFileSync(filePath);
+      const response = await fetch(url);
+      if (!response.ok) {
+          throw new Error(`Network response was not ok: ${response.statusText}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = new Uint8Array(arrayBuffer);
+      return buffer;
+  } catch (error) {
+      console.error('Error fetching data:', error);
+      throw error;
+  }
+}
+
+
+
+function imageToPixelArray(url) {
+  
+    try {
+
+    var data = fetchBufferFromUrl(url);
+
+    // // from API https://www.npmjs.com/package/pngjs#sync-api
+    // var data = fs.readFileSync(filePath);
     var png = PNG.sync.read(data);
 
     if (!png.data) {
@@ -73,7 +94,7 @@ function hexStringToImg(info) {
   let hexString = info[2];
   // assert (hexString.length == (width*height*3*2));
   
-  bytes = hexStringToBytes(hexString);
+  var bytes = hexStringToBytes(hexString);
 
   console.log(width, typeof(width))
 
@@ -97,8 +118,8 @@ function hexStringToImg(info) {
 
 
 
-[width, height, pixelArray] = imageToPixelArray('../public/12112.png')
-const hexString = pixelArrayToHexString(pixelArray);
-console.log(hexString);
-console.log(hexString.length);
-hexStringToImg([width, height, pixelArrayToHexString(pixelArray)]);
+// [width, height, pixelArray] = imageToPixelArray('../public/12112.png')
+// const hexString = pixelArrayToHexString(pixelArray);
+// console.log(hexString);
+// console.log(hexString.length);
+// hexStringToImg([width, height, pixelArrayToHexString(pixelArray)]);
