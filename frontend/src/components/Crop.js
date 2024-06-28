@@ -1,153 +1,21 @@
-import React, { useState, useRef } from 'react';
+// src/components/Crop.js
+import React, { useState, useRef, useEffect } from 'react';
 import ReactCrop, { makeAspectCrop, convertToPixelCrop } from 'react-image-crop';
 import { canvasPreview } from './canvasPreview.ts';
 import { useDebounceEffect } from './useDebounceEffects.ts';
-// import {pixelArrayToHexString, imageToPixelArray} from '../imageEnc.js';
+import { imageToPixelArray, pixelArrayToHexString, hexStringToCanvas} from '../imageEnc';
 import 'react-image-crop/dist/ReactCrop.css';
 
-const { PNG } = require('pngjs/browser');
-var Jimp = require('jimp');
+// const { PNG } = require('pngjs/browser');
+// const Jimp = require('jimp');
 
-
-/**
- *  Image to pixel array / string related
- */
-
-
-async function fetchBufferFromUrl(url) {
-  try {
-      const response = await fetch(url);
-      if (!response.ok) {
-          throw new Error(`Network response was not ok: ${response.statusText}`);
-      }
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = new Uint8Array(arrayBuffer);
-      return buffer;
-  } catch (error) {
-      console.error('Error fetching data:', error);
-      throw error;
-  }
-}
-
-
-
-function imageToPixelArray(url)
-  { 
-    try {
-
-    var data = fetchBufferFromUrl(url);
-
-    // // from API https://www.npmjs.com/package/pngjs#sync-api
-    // var data = fs.readFileSync(filePath);
-    var png = PNG.sync.read(data);
-
-    if (!png.data) {
-      throw new Error('Failed to parse PNG data');
-    }
-
-    const pixelArray = [];
-
-    for (let y = 0; y < png.height; y++) {
-      for (let x = 0; x < png.width; x++) {
-        const idx = (png.width * y + x) << 2;
-        const r = png.data[idx];
-        const g = png.data[idx + 1];
-        const b = png.data[idx + 2];
-        const a = png.data[idx + 3];
-        pixelArray.push({ r, g, b, a });
-      }
-    }
-
-    console.log("WIDTH", png.width, typeof(png.width))
-    return [png.width, png.height, pixelArray];
-  } catch (err) {
-    console.error('An error occurred while processing the image:', err.message);
-    return null;
-  }
-}
-  
-function pixelArrayToHexString(pixelArray) {
-    return pixelArray.map(pixel => {
-      // Convert each r, g, b value to a 2-digit hexadecimal string
-      const rHex = pixel.r.toString(16).padStart(2, '0');
-      const gHex = pixel.g.toString(16).padStart(2, '0');
-      const bHex = pixel.b.toString(16).padStart(2, '0');
-      const aHex = pixel.a.toString(16).padStart(2, '0');
-      // Concatenate the hex values
-      return rHex + gHex + bHex + aHex;
-    }).join('');
-}
-
-
-function hexStringToBytes(hexString) {
-  let bytes = [];
-  
-  if (hexString.length == 0){
-    return bytes
-  }
-  
-  // let rgb_pushed = 0;
-  for (let i = 0; i < hexString.length; i += 2) {
-    bytes.push(parseInt(hexString.substr(i, 2), 16));
-    // rgb_pushed += 1
-
-    // if (rgb_pushed % 3 == 0) {
-    //   bytes.push(255);
-    // }
-  }
-
-  return bytes;
-}
-
-function hexStringToImg(info) {
-  console.log(info)
-  const width = info[0];
-  const height = info[1];
-  let hexString = info[2];
-  // assert (hexString.length == (width*height*3*2));
-  
-  var bytes = hexStringToBytes(hexString);
-
-  console.log(width, typeof(width))
-
-  var image = new Jimp(width, height, 
-    function (err, image) {
-      let buffer = image.bitmap.data
-      for (var x = 0; x < width; x++) {
-        for (var y = 0; y < height; y++) {
-          const offset = (y * width + x) * 4         // RGBA = 4 bytes
-          buffer[offset    ] = bytes[offset     ]    // R
-          buffer[offset + 1] = bytes[offset  + 1]    // G
-          buffer[offset + 2] = bytes[offset  + 2]    // B
-          buffer[offset + 3] = bytes[offset  + 3]    // Alpha
-        }
-      }
-      image.write('image.png')
-    })
-
-    // return image object here
-}
-
-
-
-
-/**
- * 
- * 
- * 
- * 
- * 
- */
-
-
-
-
+// Helper function to center aspect crop
 function centerAspectCrop(mediaWidth, mediaHeight, aspect) {
   const crop = makeAspectCrop({ unit: '%', width: 90 }, aspect, mediaWidth, mediaHeight);
   return crop;
 }
 
-const Crop = () => {
+const CropComponent = () => {
   const [imgSrc, setImgSrc] = useState('');
   const previewCanvasRef = useRef(null);
   const imgRef = useRef(null);
@@ -158,6 +26,10 @@ const Crop = () => {
   const [scale, setScale] = useState(1);
   const [rotate, setRotate] = useState(0);
   const [aspect, setAspect] = useState(1 / 1);
+  const [hexString, setHexString] = useState('');
+  const [convertedImgSrc, setConvertedImgSrc] = useState('');
+  const [cropWidth, setCropWidth] = useState(0);
+  const [cropHeight, setCropHeight] = useState(0);
 
   const onSelectFile = (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -222,28 +94,60 @@ const Crop = () => {
       hiddenAnchorRef.current.click();
     }
   };
+  
+  useEffect(() => {
+    const renderCanvas = async () => {
+      if (completedCrop?.width && completedCrop?.height && imgRef.current && previewCanvasRef.current) {
+        
+        const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
+        const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
+        const pixelRatio = 1;
+        const _cropWidth = Math.floor(completedCrop.width * scaleX * pixelRatio);
+        const _cropHeight = Math.floor(completedCrop.height * scaleY * pixelRatio);
 
-  useDebounceEffect(
-    async () => {
-      if (
-        completedCrop?.width &&
-        completedCrop?.height &&
-        imgRef.current &&
-        previewCanvasRef.current
-      ) {
-        canvasPreview(
-          imgRef.current,
-          previewCanvasRef.current,
-          completedCrop,
-          scale,
-          rotate
-        );
+        setCropWidth(_cropWidth);
+        setCropHeight(_cropHeight);
+
+
+        canvasPreview(imgRef.current, previewCanvasRef.current, completedCrop, scale, rotate);
+  
+        const ctx = previewCanvasRef.current.getContext('2d');
+
+        const imageData = ctx.getImageData(0, 0, _cropWidth, _cropHeight);
+        const pixelArray = imageToPixelArray(imageData);
+        const hexString = pixelArrayToHexString(pixelArray);
+        setHexString(hexString);
+        console.log(hexString);
+        console.log(hexString.len);
+        try {
+          const imgInfo = [
+            _cropWidth,
+            _cropHeight,
+            hexString
+          ];
+          const canvImg = await hexStringToCanvas(imgInfo[0], imgInfo[1], imgInfo[2]);
+  
+          // Get the container element
+          const container = document.getElementById('imageContainer');
+          if (container) {
+            // Clear existing content in container
+            container.innerHTML = '';
+            // Append the canvas to the container
+            container.appendChild(canvImg);
+          } else {
+            console.error('Element with ID "imageContainer" not found in the DOM.');
+          }
+        } catch (error) {
+          console.error('Error rendering canvas:', error);
+        }
       }
-    },
-    100,
-    [completedCrop, scale, rotate]
-  );
+    };
+  
+    renderCanvas();
+  }, [completedCrop, scale, rotate, cropWidth, cropHeight]);
+  
 
+  
   const handleToggleAspectClick = () => {
     if (aspect) {
       setAspect(null);
@@ -323,10 +227,8 @@ const Crop = () => {
           </div>
           <div>
             <p>
-                Cropped Image Size: {completedCrop.width} x {completedCrop.height} pixels
+              Cropped Image Size: {cropWidth} x {cropHeight} pixels
             </p>
-            <p>Cropped Image: {pixelArrayToHexString(imageToPixelArray(hiddenAnchorRef)[2])}</p>
-
             <button onClick={onDownloadCropClick}>Download Crop</button>
             <a
               href="#hidden"
@@ -340,6 +242,21 @@ const Crop = () => {
             >
               Hidden download
             </a>
+            {hexString && (
+            <div>
+              <h3>Hex String:</h3>
+              <textarea value={hexString} readOnly rows={5} cols={80} />
+              <div id="imageContainer" />
+            </div>
+           
+          )}
+          {/* {convertedImgSrc && (
+            <div>
+              <h3>Converted Image:</h3>
+              <img src={convertedImgSrc} alt="Converted" />
+              <canvas id="imageContainer" width="300" height="300"></canvas>
+            </div>
+          )} */}
           </div>
         </>
       )}
@@ -347,4 +264,4 @@ const Crop = () => {
   );
 };
 
-export default Crop;
+export default CropComponent;
