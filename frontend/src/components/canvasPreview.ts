@@ -15,8 +15,25 @@ export async function canvasPreview(
     throw new Error('No 2d context')
   }
 
+
+
+
   const scaleX = image.naturalWidth / image.width
   const scaleY = image.naturalHeight / image.height
+
+
+  const xOff = (image.naturalWidth * (1 - scale)) / 2
+  const crop_x = Math.floor((crop.x * scale) + xOff)
+
+  const yOff = (image.naturalHeight * (1 - scale)) / 2
+  const crop_y = Math.floor((crop.y * scale) + yOff)
+
+  const crop_width = Math.floor(crop.width * scale)
+
+  const crop_height = Math.floor(crop.height * scale)
+
+
+
   // devicePixelRatio slightly increases sharpness on retina devices
   // at the expense of slightly slower render times and needing to
   // size the image back down if you want to download/upload and be
@@ -24,18 +41,18 @@ export async function canvasPreview(
   // const pixelRatio = window.devicePixelRatio
   const pixelRatio = 1
 
-  canvas.width = Math.floor(crop.width * scaleX * pixelRatio)
-  canvas.height = Math.floor(crop.height * scaleY * pixelRatio)
+  canvas.width = Math.floor(crop_width * scaleX * pixelRatio)
+  canvas.height = Math.floor(crop_height * scaleY * pixelRatio)
 
   ctx.scale(pixelRatio, pixelRatio)
   ctx.imageSmoothingQuality = 'high'
 
-  const cropX = crop.x * scaleX
-  const cropY = crop.y * scaleY
+  const cropX = crop_x * scaleX
+  const cropY = crop_y * scaleY
 
   const rotateRads = rotate * TO_RADIANS
-  const centerX = image.naturalWidth / 2
-  const centerY = image.naturalHeight / 2
+  const centerX = (image.naturalWidth / 2)
+  const centerY = (image.naturalHeight / 2)
 
   ctx.save()
 

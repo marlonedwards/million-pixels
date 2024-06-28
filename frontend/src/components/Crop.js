@@ -102,8 +102,12 @@ const CropComponent = () => {
         const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
         const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
         const pixelRatio = 1;
-        const _cropWidth = Math.floor(completedCrop.width * scaleX * pixelRatio);
-        const _cropHeight = Math.floor(completedCrop.height * scaleY * pixelRatio);
+        const _cropWidth = Math.floor(completedCrop.width * scaleX * pixelRatio * scale);
+        const _cropHeight = Math.floor(completedCrop.height * scaleY * pixelRatio * scale);
+
+
+        // const xOff = (imgRef.current.naturalWidth * (1 - scale)) / 2
+        // const yOff = (imgRef.current.naturalHeight * (1 - scale)) / 2
 
         setCropWidth(_cropWidth);
         setCropHeight(_cropHeight);
@@ -113,12 +117,12 @@ const CropComponent = () => {
   
         const ctx = previewCanvasRef.current.getContext('2d');
 
-        const imageData = ctx.getImageData(0, 0, _cropWidth, _cropHeight);
+        const imageData = ctx.getImageData(0, 0, _cropWidth, _cropHeight);  
         const pixelArray = imageToPixelArray(imageData);
         const hexString = pixelArrayToHexString(pixelArray);
         setHexString(hexString);
         console.log(hexString);
-        console.log(hexString.len);
+        console.log(hexString.length);
         try {
           const imgInfo = [
             _cropWidth,
@@ -170,24 +174,28 @@ const CropComponent = () => {
           <label htmlFor="scale-input">Scale: </label>
           <input
             id="scale-input"
-            type="number"
-            step="0.1"
+            type="range"
+            min="0.01"
+            max="3"
+            step="0.01"
             value={scale}
             disabled={!imgSrc}
             onChange={(e) => setScale(Number(e.target.value))}
           />
+          <span>{scale.toFixed(2)}</span>
         </div>
         <div>
           <label htmlFor="rotate-input">Rotate: </label>
           <input
             id="rotate-input"
-            type="number"
+            type="range"
+            min="-180"
+            max="180"
             value={rotate}
             disabled={!imgSrc}
-            onChange={(e) =>
-              setRotate(Math.min(180, Math.max(-180, Number(e.target.value))))
-            }
+            onChange={(e) => setRotate(Number(e.target.value))}
           />
+          <span>{rotate}°</span>
         </div>
         <div>
           <button onClick={handleToggleAspectClick}>
@@ -201,13 +209,13 @@ const CropComponent = () => {
           onChange={(newCrop) => setCrop(newCrop)}
           onComplete={(c) => setCompletedCrop(c)}
           aspect={aspect}
-          minHeight={100}
+          minHeight={10}
         >
           <img
             ref={imgRef}
             alt="Crop me"
             src={imgSrc}
-            style={{ transform: `scale(${scale}) rotate(${rotate}deg)` }}
+            style={{ transform: `scale(${1}) rotate(${rotate}deg)` }}
             onLoad={onImageLoad}
           />
         </ReactCrop>
@@ -246,7 +254,7 @@ const CropComponent = () => {
             <div>
               <h3>Hex String:</h3>
               <textarea value={hexString} readOnly rows={5} cols={80} />
-              <div id="imageContainer" />
+              <div id="imageContainer" style={{ transform: `scale(${(1, 1)}) rotate(${rotate}deg)` }} />
             </div>
            
           )}
