@@ -1,5 +1,21 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useReadContract } from "thirdweb/react";
+import { getContract } from "thirdweb";
+import { defineChain } from "thirdweb/chains";
+import { createThirdwebClient, resolveMethod } from "thirdweb";
+
+// Create the client with your clientId, or secretKey if in a server environment
+const client = createThirdwebClient({ 
+  clientId : process.env.REACT_APP_CLIENT_ID ? process.env.REACT_APP_CLIENT_ID: "INSERT_CLIENT_ID"
+});
+
+  const chain = parseInt(process.env.REACT_APP_CHAIN? process.env.REACT_APP_CHAIN : "NaN");
+const contract = getContract({ 
+  client,
+  chain: defineChain(chain),
+  address: process.env.REACT_APP_CONTRACT_ADDR
+});
 
 const CanvasComponent = () => {
   const canvasRef = useRef(null);
@@ -11,11 +27,20 @@ const CanvasComponent = () => {
   // Create a 100x100 gridData array to simulate ownership data for each 10x10 pixel block
   const gridData = Array.from({ length: 100 }, () => Array(100).fill(null));
 
+  
+  const { data, isLoading } = useReadContract({ 
+    contract, 
+    method: "function nextTokenIdToMint() view returns (uint256)", 
+    params: [] 
+  });
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     drawGrid(ctx);
   }, [zoom]);
+
+
 
   const drawGrid = (ctx) => {
     const size = 10 * zoom;

@@ -5,7 +5,8 @@ import { canvasPreview } from './canvasPreview.ts';
 import { useDebounceEffect } from './useDebounceEffects.ts';
 import { imageToPixelArray, pixelArrayToHexString, hexStringToCanvas} from '../imageEnc';
 import 'react-image-crop/dist/ReactCrop.css';
-
+import MintButtonComponent from './MintButton.tsx';
+ 
 // const { PNG } = require('pngjs/browser');
 // const Jimp = require('jimp');
 
@@ -15,7 +16,7 @@ function centerAspectCrop(mediaWidth, mediaHeight, aspect) {
   return crop;
 }
 
-const CropComponent = () => {
+const CropComponent = ({ onCropComplete, row, col}) => {
   const [imgSrc, setImgSrc] = useState('');
   const previewCanvasRef = useRef(null);
   const imgRef = useRef(null);
@@ -121,6 +122,8 @@ const CropComponent = () => {
         const pixelArray = imageToPixelArray(imageData);
         const hexString = pixelArrayToHexString(pixelArray);
         setHexString(hexString);
+        onCropComplete(hexString);
+    
         console.log(hexString);
         console.log(hexString.length);
         try {
@@ -148,7 +151,7 @@ const CropComponent = () => {
     };
   
     renderCanvas();
-  }, [completedCrop, scale, rotate, cropWidth, cropHeight]);
+  }, [onCropComplete, completedCrop, scale, rotate, cropWidth, cropHeight]);
   
 
   
@@ -255,16 +258,11 @@ const CropComponent = () => {
               <h3>Hex String:</h3>
               <textarea value={hexString} readOnly rows={5} cols={80} />
               <div id="imageContainer" style={{ transform: `scale(${(1, 1)}) rotate(${rotate}deg)` }} />
+              {/* <MintButtonComponent hexString={hexString} row={Number(row)} col={Number(col)} /> */}
+
             </div>
            
           )}
-          {/* {convertedImgSrc && (
-            <div>
-              <h3>Converted Image:</h3>
-              <img src={convertedImgSrc} alt="Converted" />
-              <canvas id="imageContainer" width="300" height="300"></canvas>
-            </div>
-          )} */}
           </div>
         </>
       )}

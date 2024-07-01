@@ -15,12 +15,8 @@ export async function canvasPreview(
     throw new Error('No 2d context')
   }
 
-
-
-
   const scaleX = image.naturalWidth / image.width
   const scaleY = image.naturalHeight / image.height
-
 
   const xOff = (image.naturalWidth * (1 - scale)) / 2
   const crop_x = Math.floor((crop.x * scale) + xOff)
@@ -31,8 +27,6 @@ export async function canvasPreview(
   const crop_width = Math.floor(crop.width * scale)
 
   const crop_height = Math.floor(crop.height * scale)
-
-
 
   // devicePixelRatio slightly increases sharpness on retina devices
   // at the expense of slightly slower render times and needing to
