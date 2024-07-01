@@ -22,12 +22,12 @@ export default function Purchase() {
         <div>
             <ConnectButton client={client} wallets={wallets} />
             {/* <WalletHeader /> */}
-            <p>Row: {row}</p>
-            <p>Col: {col}</p>
+            {/* <p>Row: {row}</p>
+            <p>Col: {col}</p> */}
             <Crop onCropComplete={onCropComplete} row={row} col={col} />
             <MintButton hexString={hexString} row={Number(row)} col={Number(col)} />
             {/* <ConComponent /> */}
-            <p>{hexString}</p>
+            {/* <p>{hexString}</p> */}
         </div>
     )
 }

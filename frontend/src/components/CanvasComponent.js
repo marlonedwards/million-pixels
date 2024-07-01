@@ -7,6 +7,8 @@ import { createThirdwebClient, resolveMethod } from "thirdweb";
 import { hexStringToCanvas } from '../imageEnc';
 
 
+
+
 // Create the client with your clientId, or secretKey if in a server environment
 const client = createThirdwebClient({ 
   clientId : process.env.REACT_APP_CLIENT_ID ? process.env.REACT_APP_CLIENT_ID: "INSERT_CLIENT_ID"
@@ -19,6 +21,50 @@ const contract = getContract({
   address: process.env.REACT_APP_CONTRACT_ADDR
 });
 
+const PLOT_WIDTH = 10;
+const PLOT_HEIGHT = 10;
+const CANVAS_SIZE = 1000; // Adjust as needed
+
+
+const TokenComponent = ({ tokenId, drawOnCanvas }) => {
+  const { data, isLoading } = useReadContract({
+    contract,
+    method: "function tokenURI(uint256 _tokenId) view returns (string)",
+    params: [tokenId]
+  });
+
+  useEffect(() => {
+    if (!isLoading && data) {
+      const base64 = data.split(',')[1];
+      const temp = atob(base64);
+      const jsonObject = JSON.parse(temp);
+      
+      const imageData = jsonObject.attributes.find(attr => attr.trait_type === "imageData").value;
+      const row = jsonObject.attributes.find(attr => attr.trait_type === "row").value;
+      const col = jsonObject.attributes.find(attr => attr.trait_type === "column").value;
+      
+      const tokenImage = hexStringToCanvas(PLOT_WIDTH, PLOT_HEIGHT, imageData);
+      drawOnCanvas(tokenImage, row, col);
+    }
+  }, [isLoading, data, drawOnCanvas, tokenId]);
+
+  return null; // Component is invisible
+};
+
+
+const AllTokens = ({ drawImgOnCanvas, maxNumTokens }) => {
+  const components = [];
+  for (let i = 0; i < maxNumTokens; i++) {
+    components.push(
+      <TokenComponent tokenId={i} drawOnCanvas={drawImgOnCanvas} />
+    );
+  }
+  return <div>{components}</div>;
+};
+
+
+
+
 const CanvasComponent = () => {
   const canvasRef = useRef(null);
   const [zoom, setZoom] = useState(1);
@@ -28,26 +74,29 @@ const CanvasComponent = () => {
 
   // Create a 100x100 gridData array to simulate ownership data for each 10x10 pixel block
   const gridData = Array.from({ length: 100 }, () => Array(100).fill(null));
-
-  const _tokenId = 0;
   
-  const {tokenMax, maxIsLoading} = useReadContract({
-    contract, 
-    method: "function nextTokenIdToMint() view returns (uint256)", 
-    params: [] 
-  });
+    // const {tokenMax, maxIsLoading} = useReadContract({
+  //   contract, 
+  //   method: "function nextTokenIdToMint() view returns (uint256)", 
+  //   params: [] 
+  // });
+
+  // hexString={hexString} row={Number(row)} col={Number(col)}
+  
+  /*
+  const _tokenId = 0;
 
   const { data, isLoading } = useReadContract({ 
     contract, 
     method: "function tokenURI(uint256 _tokenId) view returns (string)", 
     params: [_tokenId] 
   });
-
-  for (var i = 0; i < tokenMax; i++ ) {
-  }
   
   console.log(data);;
   
+  var canvImg;
+  var row;
+  var col;
   if (!isLoading && data) {
     const base64 = data.split(',')[1];
     const temp = atob(base64);
@@ -56,8 +105,8 @@ const CanvasComponent = () => {
     console.log(jsonObject);
 
     const imageData = jsonObject.attributes.find(attr => attr.trait_type === "imageData").value;
-    const row = jsonObject.attributes.find(attr => attr.trait_type === "row").value;
-    const col = jsonObject.attributes.find(attr => attr.trait_type === "column").value;
+    row = jsonObject.attributes.find(attr => attr.trait_type === "row").value;
+    col = jsonObject.attributes.find(attr => attr.trait_type === "column").value;
 
     console.log("Image Data:", imageData);
     console.log("Row:", row);
@@ -65,34 +114,19 @@ const CanvasComponent = () => {
 
     const _plot_width = 10;
     const _plot_height = 10;
-    const canvImg = hexStringToCanvas(_plot_width, _plot_height, imageData);
+    canvImg = hexStringToCanvas(_plot_width, _plot_height, imageData);
+    drawImgOnCanvas(canvImg, row, col);
+  }
+  */
+
+  function drawImgOnCanvas (canvImg, row, col) {
+    if (canvImg !== undefined) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(canvImg, row * 10, col * 10, 10, 10);
+    }
   }
 
-  
-//   useEffect (() => {
-//     const renderCanvas = async () => {
-
-//     console.log(hexString);
-//     console.log(hexString.length);
-//     try {
-//       const imgInfo = [
-//         10,
-//         10,
-//         hexString
-//       ];
-//       const canvImg = await hexStringToCanvas(imgInfo[0], imgInfo[1], imgInfo[2]);
-
-//     } catch (error) {
-//       console.error('Error rendering canvas:', error);
-//     }
-//   }
-//  });
-
-  // const jsonString = atob(data);
-  // const jsonData = JSON.parse(jsonString);
-  // const imgData = jsonData.imgData;
-
-  // console.log(imgData)
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -200,8 +234,11 @@ const CanvasComponent = () => {
 
   const popupPosition = getPopupPosition();
 
+  const maxTokens = (CANVAS_SIZE * CANVAS_SIZE) / (PLOT_HEIGHT * PLOT_WIDTH)
+
   return (
     <div>
+      <AllTokens maxNumTokens={maxTokens} drawImgOnCanvas={drawImgOnCanvas} />
       <canvas
         ref={canvasRef}
         width={1000}

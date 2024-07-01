@@ -255,8 +255,8 @@ const CropComponent = ({ onCropComplete, row, col}) => {
             </a>
             {hexString && (
             <div>
-              <h3>Hex String:</h3>
-              <textarea value={hexString} readOnly rows={5} cols={80} />
+              {/* <h3>Hex String:</h3>
+              <textarea value={hexString} readOnly rows={5} cols={80} /> */}
               <div id="imageContainer" style={{ transform: `scale(${(1, 1)}) rotate(${rotate}deg)` }} />
               {/* <MintButtonComponent hexString={hexString} row={Number(row)} col={Number(col)} /> */}
 
