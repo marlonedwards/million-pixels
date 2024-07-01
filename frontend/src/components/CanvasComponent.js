@@ -4,6 +4,8 @@ import { useReadContract } from "thirdweb/react";
 import { getContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
 import { createThirdwebClient, resolveMethod } from "thirdweb";
+import { hexStringToCanvas } from '../imageEnc';
+
 
 // Create the client with your clientId, or secretKey if in a server environment
 const client = createThirdwebClient({ 
@@ -27,19 +29,76 @@ const CanvasComponent = () => {
   // Create a 100x100 gridData array to simulate ownership data for each 10x10 pixel block
   const gridData = Array.from({ length: 100 }, () => Array(100).fill(null));
 
+  const _tokenId = 0;
   
-  const { data, isLoading } = useReadContract({ 
+  const {tokenMax, maxIsLoading} = useReadContract({
     contract, 
     method: "function nextTokenIdToMint() view returns (uint256)", 
     params: [] 
   });
+
+  const { data, isLoading } = useReadContract({ 
+    contract, 
+    method: "function tokenURI(uint256 _tokenId) view returns (string)", 
+    params: [_tokenId] 
+  });
+
+  for (var i = 0; i < tokenMax; i++ ) {
+  }
+  
+  console.log(data);;
+  
+  if (!isLoading && data) {
+    const base64 = data.split(',')[1];
+    const temp = atob(base64);
+    console.log(temp);
+    const jsonObject = JSON.parse(temp);
+    console.log(jsonObject);
+
+    const imageData = jsonObject.attributes.find(attr => attr.trait_type === "imageData").value;
+    const row = jsonObject.attributes.find(attr => attr.trait_type === "row").value;
+    const col = jsonObject.attributes.find(attr => attr.trait_type === "column").value;
+
+    console.log("Image Data:", imageData);
+    console.log("Row:", row);
+    console.log("Column:", col);
+
+    const _plot_width = 10;
+    const _plot_height = 10;
+    const canvImg = hexStringToCanvas(_plot_width, _plot_height, imageData);
+  }
+
+  
+//   useEffect (() => {
+//     const renderCanvas = async () => {
+
+//     console.log(hexString);
+//     console.log(hexString.length);
+//     try {
+//       const imgInfo = [
+//         10,
+//         10,
+//         hexString
+//       ];
+//       const canvImg = await hexStringToCanvas(imgInfo[0], imgInfo[1], imgInfo[2]);
+
+//     } catch (error) {
+//       console.error('Error rendering canvas:', error);
+//     }
+//   }
+//  });
+
+  // const jsonString = atob(data);
+  // const jsonData = JSON.parse(jsonString);
+  // const imgData = jsonData.imgData;
+
+  // console.log(imgData)
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     drawGrid(ctx);
   }, [zoom]);
-
 
 
   const drawGrid = (ctx) => {

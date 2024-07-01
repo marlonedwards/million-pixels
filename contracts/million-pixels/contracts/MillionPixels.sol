@@ -65,14 +65,13 @@ contract MillionPixels is ERC721Base {
         TokenData memory data = tokenDataMap[tokenId];
         require(data.inited, "Tried to pull un-inited TokenData from tokenDataMap");
 
-        string memory json = string(abi.encodePacked(
-            '{"name": "Plot: ', toString(tokenId),
-            '", "description": "Million Pixels on Base", ',
-            '"image": "', data.imageData,
-            '", "attributes": [',
-            '{"trait_type": "row", "value": "', toString(uint256(data.row)), '"},',
-            '{"trait_type": "column", "value": "', toString(uint256(data.col)), '"}',
-            '{"trait_type": "imageData", "value": "', data.imageData, '"}'));
+        string memory json = string(abi.encodePacked('{',
+            '"name": "Plot ', toString(tokenId),'", ',
+            '"description": "Million Pixels on Base", ',
+            '"attributes": [',
+                '{"trait_type": "row", "value": "', toString(uint256(data.row)), '"}',
+                ',{"trait_type": "column", "value": "', toString(uint256(data.col)), '"}',
+                ',{"trait_type": "imageData", "value": "', data.imageData, '"}'));
         
         if (bytes(data.youtube).length > 0) {
             json = string(abi.encodePacked(json, ',{"trait_type": "youtube", "value": "', data.youtube, '"}'));
