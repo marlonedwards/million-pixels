@@ -3,7 +3,7 @@ One million pixels on Base.
 
 ## To run this project, do the following:
 1. Clone this repository.
-2. Install dependies with `npm install`.
+2. Install dependencies with `npm install -legacy-peer-deps`.
 3. Create a .env file in the frontend directory.
 Example:
 ```
